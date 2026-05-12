@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Rinha-2026-WebAPI/Rinha-2026-WebAPI.csproj" />
+  <Project Path="Rinha-2026-Preprocessor/Rinha-2026-Preprocessor.csproj" />
+</Solution>

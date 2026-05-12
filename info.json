@@ -1,0 +1,6 @@
+{
+  "participante": "Sutter",
+  "linguagem": "C# (.NET 10 AOT)",
+  "abordagem": "Híbrido LightGBM + IVF KNN",
+  "descricao": "API de detecção de fraude com LightGBM para triagem rápida (~75% das requisições) e busca KNN baseada em IVF para casos ambíguos. Normalização de vetores 14D, armazenamento em float16, hotpath sem alocação."
+}
