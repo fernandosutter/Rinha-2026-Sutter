@@ -80,8 +80,8 @@ builder.Logging.ClearProviders();
 
 var app = builder.Build();
 
-// Warm up thread pool
-ThreadPool.SetMinThreads(Environment.ProcessorCount * 2, Environment.ProcessorCount * 2);
+// Warm up thread pool — fixed at 16 to avoid starvation with 0.44 CPU (ProcessorCount=1)
+ThreadPool.SetMinThreads(16, 16);
 
 app.MapGet("/ready", () => ivfIndex.IsLoaded ? Results.Ok() : Results.StatusCode(503));
 

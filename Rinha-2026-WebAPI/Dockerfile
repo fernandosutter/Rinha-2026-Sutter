@@ -39,4 +39,8 @@ COPY --from=train /data/model.bin /app/model.bin
 COPY --from=preprocess /data/index.bin /app/index.bin
 ENV INDEX_PATH=/app/index.bin
 ENV MODEL_PATH=/app/model.bin
+ENV DOTNET_EnableDiagnostics=0
+ENV DOTNET_GCHeapHardLimit=0x8000000
+ENV DOTNET_GCConserveMemory=9
+ENV DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0
 ENTRYPOINT ["./Rinha-2026-WebAPI"]

@@ -17,7 +17,7 @@ public sealed class IvfIndex
     private Half[] _vectors = []; // totalVectors * Dims (sorted by cluster)
     private byte[] _labels = []; // totalVectors (0=legit, 1=fraud)
     private int _totalVectors;
-    private int _nprobe = 25;
+    private int _nprobe = 15;
 
     public bool IsLoaded => _totalVectors > 0;
 
@@ -221,7 +221,7 @@ public sealed class IvfIndex
         }
 
         // Adjust nprobe based on cluster count
-        _nprobe = Math.Min(25, _nClusters);
+        _nprobe = Math.Min(15, _nClusters);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
