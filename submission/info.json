@@ -1,0 +1,11 @@
+{
+  "participants": ["Fernando Sutter"],
+  "social": [
+    "https://www.linkedin.com/in/fernando-sutter",
+    "https://github.com/fernandosutter",
+    "https://www.instagram.com/sutterfernando"
+  ],
+  "source-code-repo": "https://github.com/fernandosutter/Rinha-2026-Sutter",
+  "stack": ["c#", ".net 10", "nginx", "python", "lightgbm"],
+  "open_to_work": false
+}
