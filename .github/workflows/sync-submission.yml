@@ -1,0 +1,42 @@
+name: Sync Submission Branch
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/sync-submission.yml
+      - submission/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish submission branch
+        shell: bash
+        run: |
+          rm -rf .submission-branch
+          mkdir .submission-branch
+          cp submission/docker-compose.yml .submission-branch/docker-compose.yml
+          cp submission/nginx.conf .submission-branch/nginx.conf
+          cp submission/info.json .submission-branch/info.json
+
+          cd .submission-branch
+          git init
+          git checkout -b submission
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Update submission branch"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin submission
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
