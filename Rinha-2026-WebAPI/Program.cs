@@ -43,6 +43,7 @@ else
 // Load GBM model (optional — falls back to IVF-only if missing)
 var gbmPredictor = new GbmPredictor();
 var modelBinPath = Environment.GetEnvironmentVariable("MODEL_PATH") ?? "model.bin";
+var unixSocketPath = Environment.GetEnvironmentVariable("UNIX_SOCKET_PATH");
 
 if (File.Exists(modelBinPath))
 {
@@ -74,11 +75,62 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxConcurrentUpgradedConnections = null;
     options.Limits.MaxRequestBodySize = 1_048_576; // 1MB
     options.AddServerHeader = false;
+
+    if (!string.IsNullOrWhiteSpace(unixSocketPath))
+    {
+        var socketDirectory = Path.GetDirectoryName(unixSocketPath);
+        if (!string.IsNullOrWhiteSpace(socketDirectory))
+        {
+            Directory.CreateDirectory(socketDirectory);
+        }
+
+        if (File.Exists(unixSocketPath))
+        {
+            File.Delete(unixSocketPath);
+        }
+
+        options.ListenUnixSocket(unixSocketPath);
+    }
 });
 
 builder.Logging.ClearProviders();
 
 var app = builder.Build();
+
+if (!string.IsNullOrWhiteSpace(unixSocketPath))
+{
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        try
+        {
+            if (!OperatingSystem.IsWindows() && File.Exists(unixSocketPath))
+            {
+                File.SetUnixFileMode(
+                    unixSocketPath,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite |
+                    UnixFileMode.GroupRead | UnixFileMode.GroupWrite |
+                    UnixFileMode.OtherRead | UnixFileMode.OtherWrite);
+            }
+        }
+        catch
+        {
+        }
+    });
+
+    app.Lifetime.ApplicationStopped.Register(() =>
+    {
+        try
+        {
+            if (File.Exists(unixSocketPath))
+            {
+                File.Delete(unixSocketPath);
+            }
+        }
+        catch
+        {
+        }
+    });
+}
 
 // Warm up thread pool — fixed at 16 to avoid starvation with 0.44 CPU (ProcessorCount=1)
 ThreadPool.SetMinThreads(16, 16);
