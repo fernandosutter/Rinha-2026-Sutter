@@ -40,13 +40,10 @@ COPY --from=preprocess /data/index.bin /app/index.bin
 ENV INDEX_PATH=/app/index.bin
 ENV MODEL_PATH=/app/model.bin
 ENV DOTNET_EnableDiagnostics=0
-# Heap cap ~100MB leaves headroom for IVF/Model buffers within 160MB cgroup
-ENV DOTNET_GCHeapHardLimit=0x6400000
 ENV DOTNET_GCConserveMemory=9
 ENV DOTNET_GCRetainVM=0
-ENV DOTNET_gcServer=1
-ENV DOTNET_gcConcurrent=0
+# Workstation + concurrent GC: avoids STW pauses on a single-CPU container.
+ENV DOTNET_gcServer=0
+ENV DOTNET_gcConcurrent=1
 ENV DOTNET_ThreadPool_UnfairSemaphoreSpinLimit=0
-ENV DOTNET_SYSTEM_NET_SOCKETS_THREAD_COUNT=1
-ENV DOTNET_PROCESSOR_COUNT=1
 ENTRYPOINT ["./Rinha-2026-WebAPI"]

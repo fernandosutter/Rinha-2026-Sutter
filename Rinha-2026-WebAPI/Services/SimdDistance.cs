@@ -70,30 +70,30 @@ public static class SimdDistance
     }
 
     // Distance from float query to Half-stored vector (IVF vectors stored as Half).
-    // Hot path: convert the 14 halves to floats once (Half->float is JIT-intrinsified
-    // to F16C VCVTSH2SS on Haswell/Broadwell+, ~1c throughput each) then reuse the
-    // already-vectorized float distance kernel above.
+    // Scalar path with manual unrolling. (float)Half is intrinsified to F16C on
+    // Haswell+, so the per-lane convert is essentially free; with only 14 dims
+    // the scalar add/mul chain beats setting up SIMD via a temporary buffer.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float EuclideanDistanceSquaredHalf(ReadOnlySpan<float> query, ReadOnlySpan<Half> vec)
     {
-        // 16 floats keeps the buffer 64-byte aligned in stack and lets the
-        // AVX2 kernel above read the first 8/4/2 lanes without bounds checks.
-        Span<float> buf = stackalloc float[16];
-        ref Half src = ref MemoryMarshal.GetReference(vec);
-        buf[0]  = (float)Unsafe.Add(ref src, 0);
-        buf[1]  = (float)Unsafe.Add(ref src, 1);
-        buf[2]  = (float)Unsafe.Add(ref src, 2);
-        buf[3]  = (float)Unsafe.Add(ref src, 3);
-        buf[4]  = (float)Unsafe.Add(ref src, 4);
-        buf[5]  = (float)Unsafe.Add(ref src, 5);
-        buf[6]  = (float)Unsafe.Add(ref src, 6);
-        buf[7]  = (float)Unsafe.Add(ref src, 7);
-        buf[8]  = (float)Unsafe.Add(ref src, 8);
-        buf[9]  = (float)Unsafe.Add(ref src, 9);
-        buf[10] = (float)Unsafe.Add(ref src, 10);
-        buf[11] = (float)Unsafe.Add(ref src, 11);
-        buf[12] = (float)Unsafe.Add(ref src, 12);
-        buf[13] = (float)Unsafe.Add(ref src, 13);
-        return EuclideanDistanceSquared(query, buf);
+        float d0 = query[0] - (float)vec[0];
+        float d1 = query[1] - (float)vec[1];
+        float d2 = query[2] - (float)vec[2];
+        float d3 = query[3] - (float)vec[3];
+        float d4 = query[4] - (float)vec[4];
+        float d5 = query[5] - (float)vec[5];
+        float d6 = query[6] - (float)vec[6];
+        float d7 = query[7] - (float)vec[7];
+        float d8 = query[8] - (float)vec[8];
+        float d9 = query[9] - (float)vec[9];
+        float d10 = query[10] - (float)vec[10];
+        float d11 = query[11] - (float)vec[11];
+        float d12 = query[12] - (float)vec[12];
+        float d13 = query[13] - (float)vec[13];
+
+        return d0 * d0 + d1 * d1 + d2 * d2 + d3 * d3
+             + d4 * d4 + d5 * d5 + d6 * d6 + d7 * d7
+             + d8 * d8 + d9 * d9 + d10 * d10 + d11 * d11
+             + d12 * d12 + d13 * d13;
     }
 }

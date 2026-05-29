@@ -10,16 +10,17 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OptimizationPreference>Speed</OptimizationPreference>
-    <!-- Mac Mini Late 2014 = Haswell (i5-4278U / i7-4578U): AVX2 + FMA3 + BMI1/2 + F16C -->
-    <IlcInstructionSet>avx2,sse4.2</IlcInstructionSet>
+    <!-- Mac Mini Late 2014 = Haswell: AVX2 only (FMA/BMI flags not accepted by ilc 10.0.8) -->
+    <IlcInstructionSet>avx2</IlcInstructionSet>
     <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
     <StackTraceSupport>false</StackTraceSupport>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
     <InvariantTimezone>true</InvariantTimezone>
-    <ServerGarbageCollection>true</ServerGarbageCollection>
-    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
-    <TieredCompilation>false</TieredCompilation>
+    <!-- Workstation + concurrent GC: with 1 logical CPU per container, server-GC
+         stop-the-world pauses dominated p99 (53ms -> 161ms regression). -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>
 
 </Project>

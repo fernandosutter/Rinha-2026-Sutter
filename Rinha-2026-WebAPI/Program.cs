@@ -137,10 +137,9 @@ if (!string.IsNullOrWhiteSpace(unixSocketPath))
     });
 }
 
-// Warm up thread pool — with 0.45 CPU per container ProcessorCount=1, more threads
-// just cause context-switch overhead. Keep it small and bounded.
-ThreadPool.SetMinThreads(2, 2);
-ThreadPool.SetMaxThreads(8, 8);
+// Warm up thread pool — keep generous because Kestrel/IO and the work item
+// for /fraud-score share the pool; capping low caused queueing on bursts.
+ThreadPool.SetMinThreads(16, 16);
 
 app.MapGet("/ready", () => ivfIndex.IsLoaded ? Results.Ok() : Results.StatusCode(503));
 

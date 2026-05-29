@@ -15,7 +15,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.10"
+          cpus: "0.15"
           memory: "30M"
     networks:
       - rinha
@@ -26,17 +26,12 @@ services:
       - UNIX_SOCKET_PATH=/var/run/api/api.sock
       - INDEX_PATH=/app/index.bin
       - MODEL_PATH=/app/model.bin
-      - DOTNET_GCHeapHardLimit=0x6400000
-      - DOTNET_GCConserveMemory=9
-      - DOTNET_TieredPGO=1
-      - DOTNET_ReadyToRun=0
-      - DOTNET_TC_QuickJitForLoops=1
     volumes:
       - api1-socket:/var/run/api
     deploy:
       resources:
         limits:
-          cpus: "0.45"
+          cpus: "0.425"
           memory: "160M"
     networks:
       - rinha
@@ -47,17 +42,12 @@ services:
       - UNIX_SOCKET_PATH=/var/run/api/api.sock
       - INDEX_PATH=/app/index.bin
       - MODEL_PATH=/app/model.bin
-      - DOTNET_GCHeapHardLimit=0x6400000
-      - DOTNET_GCConserveMemory=9
-      - DOTNET_TieredPGO=1
-      - DOTNET_ReadyToRun=0
-      - DOTNET_TC_QuickJitForLoops=1
     volumes:
       - api2-socket:/var/run/api
     deploy:
       resources:
         limits:
-          cpus: "0.45"
+          cpus: "0.425"
           memory: "160M"
     networks:
       - rinha
