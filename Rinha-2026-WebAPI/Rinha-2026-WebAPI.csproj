@@ -10,7 +10,16 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OptimizationPreference>Speed</OptimizationPreference>
-    <IlcInstructionSet>avx2</IlcInstructionSet>
+    <!-- Mac Mini Late 2014 = Haswell (i5-4278U / i7-4578U): AVX2 + FMA3 + BMI1/2 + F16C -->
+    <IlcInstructionSet>avx2,bmi,bmi2,fma,lzcnt,popcnt,pclmul,aes</IlcInstructionSet>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+    <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
+    <StackTraceSupport>false</StackTraceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <InvariantTimezone>true</InvariantTimezone>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
 
 </Project>

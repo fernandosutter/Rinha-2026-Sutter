@@ -73,8 +73,13 @@ builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxConcurrentConnections = null;
     options.Limits.MaxConcurrentUpgradedConnections = null;
-    options.Limits.MaxRequestBodySize = 1_048_576; // 1MB
+    options.Limits.MaxRequestBodySize = 8192;
+    options.Limits.KeepAliveTimeout = TimeSpan.FromSeconds(120);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(10);
+    options.Limits.MinRequestBodyDataRate = null;
+    options.Limits.MinResponseDataRate = null;
     options.AddServerHeader = false;
+    options.AllowSynchronousIO = false;
 
     if (!string.IsNullOrWhiteSpace(unixSocketPath))
     {
@@ -132,8 +137,10 @@ if (!string.IsNullOrWhiteSpace(unixSocketPath))
     });
 }
 
-// Warm up thread pool — fixed at 16 to avoid starvation with 0.44 CPU (ProcessorCount=1)
-ThreadPool.SetMinThreads(16, 16);
+// Warm up thread pool — with 0.45 CPU per container ProcessorCount=1, more threads
+// just cause context-switch overhead. Keep it small and bounded.
+ThreadPool.SetMinThreads(2, 2);
+ThreadPool.SetMaxThreads(8, 8);
 
 app.MapGet("/ready", () => ivfIndex.IsLoaded ? Results.Ok() : Results.StatusCode(503));
 
