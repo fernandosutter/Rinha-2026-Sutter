@@ -11,7 +11,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OptimizationPreference>Speed</OptimizationPreference>
     <!-- Mac Mini Late 2014 = Haswell (i5-4278U / i7-4578U): AVX2 + FMA3 + BMI1/2 + F16C -->
-    <IlcInstructionSet>avx2,bmi,bmi2,fma,lzcnt,popcnt,pclmul,aes</IlcInstructionSet>
+    <IlcInstructionSet>avx2,sse4.2</IlcInstructionSet>
     <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
     <StackTraceSupport>false</StackTraceSupport>
