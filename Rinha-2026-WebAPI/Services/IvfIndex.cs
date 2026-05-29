@@ -17,7 +17,7 @@ public sealed class IvfIndex
     private Half[] _vectors = []; // totalVectors * Dims (sorted by cluster)
     private byte[] _labels = []; // totalVectors (0=legit, 1=fraud)
     private int _totalVectors;
-    private int _nprobe = 8;
+    private int _nprobe = 15;
 
     public bool IsLoaded => _totalVectors > 0;
 
@@ -220,9 +220,8 @@ public sealed class IvfIndex
             _clusterOffsets[currentCluster] = _totalVectors;
         }
 
-        // Adjust nprobe based on cluster count. 8 keeps recall high while halving
-        // candidate scan work vs 15 (matters a lot on throttled CPU).
-        _nprobe = Math.Min(8, _nClusters);
+        // nprobe=15 is the original value; test on real hardware to measure impact.
+        _nprobe = Math.Min(15, _nClusters);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -310,22 +309,17 @@ public sealed class IvfIndex
                 }
             }
 
-            // Early exit: once K slots are filled and we already scanned >=2 probes,
-            // if all current top-K agree, the decision is stable.
-            if (filledCount >= K && p >= 1)
+            // Early exit: once K slots are filled and we scanned >=2 probes,
+            // if all current top-K agree unanimously, the decision is stable.
+            if (filledCount >= K && p >= 2)
             {
                 int fraudVotes = 0;
                 for (int i = 0; i < K; i++)
                 {
                     if (topLabels[i] == 1) fraudVotes++;
                 }
-                // Unanimous (all fraud or all legit) -> stop scanning further clusters
+                // All agree: no need to scan more clusters
                 if (fraudVotes == K || fraudVotes == 0)
-                    break;
-                // Also exit on dominant majority (4/5 same class) after 3 probes:
-                // remaining clusters are unlikely to flip 4-vote majority and they
-                // are farther centroids by definition.
-                if (p >= 3 && (fraudVotes >= 4 || fraudVotes <= 1))
                     break;
             }
         }

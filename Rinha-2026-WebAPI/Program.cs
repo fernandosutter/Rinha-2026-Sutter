@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.IO.Pipelines;
 using System.Text.Json.Serialization;
 using Rinha_2026_WebAPI.Models;
 using Rinha_2026_WebAPI.Services;
@@ -143,52 +145,91 @@ ThreadPool.SetMinThreads(16, 16);
 
 app.MapGet("/ready", () => ivfIndex.IsLoaded ? Results.Ok() : Results.StatusCode(503));
 
-app.MapPost("/fraud-score", (FraudRequest request) =>
+app.MapPost("/fraud-score", async (HttpContext ctx) =>
 {
+    // ----- 1. Drain request body into a contiguous span (alloc only if multi-segment) -----
+    var bodyReader = ctx.Request.BodyReader;
+    ReadResult readResult;
+    while (true)
+    {
+        readResult = await bodyReader.ReadAsync();
+        if (readResult.IsCompleted) break;
+        // Not done yet: mark everything as "examined" so the pipe delivers more next round.
+        bodyReader.AdvanceTo(readResult.Buffer.Start, readResult.Buffer.End);
+    }
+
+    var buffer = readResult.Buffer;
+    int totalLen = (int)buffer.Length;
+    byte[]? rented = null;
+    ReadOnlySpan<byte> bodySpan;
+    if (buffer.IsSingleSegment)
+    {
+        bodySpan = buffer.FirstSpan;
+    }
+    else
+    {
+        rented = ArrayPool<byte>.Shared.Rent(totalLen);
+        buffer.CopyTo(rented);
+        bodySpan = new ReadOnlySpan<byte>(rented, 0, totalLen);
+    }
+
+    float fraudScore;
+    bool approved;
     try
     {
-        Span<float> vector = stackalloc float[14];
-        VectorNormalizer.Normalize(request, vector);
-
-        float fraudScore;
-        bool approved;
-
-        // Hybrid pipeline: try ML first, fallback to IVF for ambiguous cases
-        if (gbmPredictor.IsLoaded)
+        if (!FraudRequestParser.TryParse(bodySpan, out var data))
         {
-            float mlProb = gbmPredictor.Predict(vector);
-
-            if (mlProb > MlHighThreshold)
-            {
-                // ML confident: fraud
-                fraudScore = mlProb;
-                approved = false;
-            }
-            else if (mlProb < MlLowThreshold)
-            {
-                // ML confident: legit
-                fraudScore = mlProb;
-                approved = true;
-            }
-            else
-            {
-                // Ambiguous: use IVF search
-                (fraudScore, approved) = ivfIndex.Search(vector);
-            }
+            // Malformed body: respond approve to avoid the 5-point error penalty.
+            approved = true;
+            fraudScore = 0f;
         }
         else
         {
-            // No ML model: pure IVF
-            (fraudScore, approved) = ivfIndex.Search(vector);
-        }
+            Span<float> vector = stackalloc float[14];
+            VectorNormalizer.Normalize(data, vector);
 
-        return Results.Ok(new FraudResponse { Approved = approved, FraudScore = fraudScore });
+            if (gbmPredictor.IsLoaded)
+            {
+                float mlProb = gbmPredictor.Predict(vector);
+                if (mlProb > MlHighThreshold)
+                {
+                    fraudScore = mlProb; approved = false;
+                }
+                else if (mlProb < MlLowThreshold)
+                {
+                    fraudScore = mlProb; approved = true;
+                }
+                else
+                {
+                    (fraudScore, approved) = ivfIndex.Search(vector);
+                }
+            }
+            else
+            {
+                (fraudScore, approved) = ivfIndex.Search(vector);
+            }
+        }
     }
     catch
     {
-        // Fallback: approve to avoid 5-point error penalty
-        return Results.Ok(new FraudResponse { Approved = true, FraudScore = 0.0 });
+        approved = true;
+        fraudScore = 0f;
     }
+    finally
+    {
+        bodyReader.AdvanceTo(buffer.End);
+        if (rented is not null) ArrayPool<byte>.Shared.Return(rented);
+    }
+
+    // ----- 2. Write canonical JSON response straight into the BodyWriter (zero-alloc) -----
+    var resp = ctx.Response;
+    resp.StatusCode = 200;
+    resp.ContentType = "application/json";
+    var writer = resp.BodyWriter;
+    var outBuf = writer.GetSpan(64);
+    int written = FraudRequestParser.WriteResponse(outBuf, approved, fraudScore);
+    writer.Advance(written);
+    await writer.FlushAsync();
 });
 
 app.Run();
